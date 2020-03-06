@@ -36,26 +36,42 @@ function injectFragmentParentSystem(node) {
   node.__vf_DOM_appendChild = node.appendChild;
   node.__vf_DOM_removeChild = node.removeChild;
 
+  /*
   node.__vf_registerChildFragment = function(frag) {
     const fragIndex = this.__vf_childFragments.indexOf(frag);
     if(fragIndex !== -1) this.__vf_childFragments.splice(fragIndex, 1);
     this.__vf_childFragments.push(frag);
   }
+  */
 
   node.insertBefore = function (insertee, ref) {
+    console.log('insertBefore parent', this, insertee, ref);
+    /*
     const fragIndex = this.__vf_childFragments.indexOf(ref);
     if (fragIndex !== -1) {
-      const frag = ref;
+      ref = ref;
       this.__vf_DOM_insertBefore(insertee, frag.__vf_head);
     }
     else {
       this.__vf_DOM_insertBefore(insertee, ref);
     }
+    */
+   if(ref && ref.__vf_initialized === true) ref = ref.__vf_head;
+   if(insertee.__vf_initialized === true)
+     // 代わりに中身を追加する
+     insertee.__vf_spreadChildren(this.__vf_DOM_insertBefore.bind(this), ref);
+   else
+     this.__vf_DOM_insertBefore(insertee, ref);
   }
 
   node.removeChild = function (removee) {
+    console.log('removeChild parent', this, removee);
+    /*
     const fragIndex = this.__vf_childFragments.indexOf(removee);
     if (fragIndex !== -1) {
+    */
+    if (removee.__vf_initialized === true) {
+      console.log('fragmode');
       const frag = removee;
       while (frag.__vf_head.nextSibling !== frag.__vf_tail)
         this.__vf_DOM_removeChild(frag.__vf_head.nextSibling);
@@ -65,10 +81,12 @@ function injectFragmentParentSystem(node) {
 
       unfreeze(frag, 'parentNode');
 
-      this.__vf_childFragments.splice(fragIndex, 1);
+      //this.__vf_childFragments.splice(fragIndex, 1);
     }
-    else
+    else {
+      console.log('normalmode');
       this.__vf_DOM_removeChild(removee);
+    }
   }
 }
 
@@ -94,6 +112,8 @@ export default {
     const directParent = container.parentNode;
     const parent = findRealParent(container); // 実際に小要素を追加するべき要素(仮のルートの親)
     injectFragmentParentSystem(parent); // 確実に親要素が改造されていることを保証
+
+    console.log('BORN', this.name, container);
 
     const head = document.createComment(`fragment#${this.name}#head`)
     const tail = document.createComment(`fragment#${this.name}#tail`)
@@ -135,6 +155,7 @@ export default {
     container.__vf_spreadChildren(directParent.insertBefore.bind(directParent), container);
 
     // containerの実DOMは用済みなのでparentから削除する
+    console.log('removeChild mounted', directParent, container);
     directParent.removeChild(container);
 
     // 実DOM削除によって変化してしまったプロパティをまやかしで置き換える
@@ -142,7 +163,9 @@ export default {
     freezeWithCallback(container, 'nextSibling', () => tail.nextSibling);
 
     // 実親のシステムに登録
-    parent.__vf_registerChildFragment(container);
+    //parent.__vf_registerChildFragment(container);
+
+    container.__vf_initialized = true;
 
   },
 
@@ -157,7 +180,7 @@ export default {
     
     return h(
       "div",
-      { attrs: { fragment: this.name, fragment_stub: 'fragment_stub', is: this.$parent.$vnode.tag } },
+      { attrs: { fragment: this.name, fragment_stub: 'fragment_stub', is: this.$parent.$vnode.tag, name: this.name } },
       children
     )
   }
