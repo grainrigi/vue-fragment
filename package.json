@@ -10,7 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "node ./rollup.build.js",
     "prepublish": "npm run build",
-    "postinstall": "postinstall-build dist \"npm run build\""
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -43,6 +43,5 @@
     "rollup-plugin-minify-es": "^1.1.1"
   },
   "dependencies": {
-    "postinstall-build": "^5.0.3"
   }
 }
