@@ -81,6 +81,7 @@ export default {
 
   mounted() {
     const container = this.$el; // 仮に生成されたルート要素(捨てられる、子要素が格納されている)
+    if (container.__vf_initialized) return; // 既に初期化されている場合、containerは既に実DOM上にいないため終了
     const directParent = container.parentNode;
     const parent = findRealParent(container); // 実際に小要素を追加するべき要素(仮のルートの親)
     injectFragmentParentSystem(parent); // 確実に親要素が改造されていることを保証
